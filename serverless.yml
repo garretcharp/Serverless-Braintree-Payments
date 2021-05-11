@@ -1,0 +1,71 @@
+service: serverless-framework
+
+frameworkVersion: '^2.0.0'
+configValidationMode: error
+unresolvedVariablesNotificationMode: error
+variablesResolutionMode: 20210326
+useDotenv: true
+
+custom:
+    webpack:
+        webpackConfig: './webpack.config.js'
+        includeModules: true
+
+    dynamodb:
+        stages:
+            - dev
+        start:
+            port: 8000
+            inMemory: true
+            migrate: true
+
+plugins:
+    - serverless-webpack
+    - serverless-dynamodb-local
+    - serverless-offline
+
+provider:
+    stage: ${opt:stage, 'dev'}
+
+    name: aws
+    region: us-east-1
+    profile: default
+
+    logRetentionInDays: 14
+    logs:
+        httpApi: true
+
+    deploymentBucket:
+        blockPublicAccess: true
+        name: com.serverless.${self:service}.deploys
+        maxPreviousDeploymentArtifacts: 3
+
+    runtime: nodejs12.x
+    memorySize: 512
+    timeout: 10
+    environment:
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+        DYNAMO_TABLE_NAME: ${self:service}-${self:provider.stage}
+
+    httpApi:
+        name: ${self:service}-${self:provider.stage}
+        cors:
+            allowedHeaders:
+                - Content-Type
+                - Authorization
+            allowedMethods:
+                - GET
+
+package:
+    individually: true
+
+functions:
+    # Rest
+    - ${file(./src/functions/rest/payments/process/function.yml)}
+
+resources:
+    # Configurations
+    - ${file(./configuration/dynamodb.yml)}
+
+    # Function Roles
+    - ${file(./src/functions/rest/payments/process/role.yml)}

@@ -1,0 +1,7 @@
+HttpPaymentsProcessFunction:
+    handler: src/functions/rest/payments/process/controller.handler
+    role: HttpPaymentsProcessFunctionRole
+    events:
+        - httpApi:
+              method: POST
+              path: /payments/process
